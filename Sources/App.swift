@@ -9,8 +9,8 @@ struct FoundDevice: Identifiable {
 }
 
 final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeripheralDelegate {
-    @Published var status = "Bluetooth wird vorbereitet …"
-    @Published var detail = "MightySat einschalten und die Masimo-App auf dem Handy schließen."
+    @Published var status = L10n.text("Preparing Bluetooth…")
+    @Published var detail = L10n.text("Turn on your MightySat and close the Masimo app on your phone.")
     @Published var devices: [FoundDevice] = []
     @Published var connectedName: String?
     @Published var busy = false
@@ -78,7 +78,7 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
                 attributes: [.posixPermissions: 0o700])
             try JSONSerialization.data(withJSONObject: fields, options: [.sortedKeys]).write(to: target, options: .atomic)
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: target.path)
-        } catch { captureError = "Live-Export fehlgeschlagen: \(error.localizedDescription)" }
+        } catch { captureError = L10n.format("Live export failed: %@", error.localizedDescription) }
     }
 
     func record(_ type: String, _ fields: [String: String] = [:]) {
@@ -102,28 +102,28 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
                 "pi": masimoReading?.pi.map { String($0) } ?? "",
                 "capture_file": capture?.url.path ?? "", "updated_at": ISO8601DateFormatter().string(from: Date())])
         } catch {
-            captureError = "Aufzeichnung fehlgeschlagen: \(error.localizedDescription)"
+            captureError = L10n.format("Recording failed: %@", error.localizedDescription)
         }
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:
-            status = "Bluetooth bereit"
+            status = L10n.text("Bluetooth ready")
             if autoScan { autoScan = false; scan() }
         case .unauthorized:
             invalidateConnection()
-            status = "Bluetooth-Zugriff fehlt"
-            detail = "Systemeinstellungen → Datenschutz & Sicherheit → Bluetooth → Masimo Live erlauben."
+            status = L10n.text("Bluetooth access denied")
+            detail = L10n.text("System Settings → Privacy & Security → Bluetooth → allow Masimo Live.")
         case .poweredOff:
             invalidateConnection()
-            status = "Bluetooth ist ausgeschaltet"
-            detail = "Bluetooth am Mac einschalten, danach „Gerät suchen“ wählen."
+            status = L10n.text("Bluetooth is off")
+            detail = L10n.text("Enable Bluetooth on your Mac, then choose “Search for device”.")
         case .unsupported:
             invalidateConnection()
-            status = "Bluetooth LE nicht verfügbar"
-            detail = "Dieser Mac unterstützt die benötigte Bluetooth-Verbindung nicht."
-        default: status = "Bluetooth wird vorbereitet …"
+            status = L10n.text("Bluetooth LE unavailable")
+            detail = L10n.text("This Mac does not support the required Bluetooth connection.")
+        default: status = L10n.text("Preparing Bluetooth…")
         }
         record("bluetooth_state", ["state": String(central.state.rawValue)])
     }
@@ -137,22 +137,22 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
         do {
             if capture == nil { capture = try Capture(directory: captureDirectory) }
         } catch {
-            captureError = "Aufzeichnung kann nicht erstellt werden: \(error.localizedDescription)"
+            captureError = L10n.format("Could not create recording: %@", error.localizedDescription)
             return
         }
         devices = []; peripherals = [:]
-        status = "MightySat wird gesucht …"
-        detail = "Gerät am Finger lassen und Bluetooth am MightySat aktivieren. Suche läuft 30 Sekunden."
+        status = L10n.text("Searching for MightySat…")
+        detail = L10n.text("Keep your finger in the device and enable its Bluetooth. Search runs for 30 seconds.")
         scanning = true
         record("scan_started")
         central.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
         scanTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: false) { [weak self] _ in
             guard let self = self else { return }
             self.central.stopScan(); self.scanning = false
-            self.status = self.devices.isEmpty ? "Kein MightySat gefunden" : "Gerät auswählen"
+            self.status = self.devices.isEmpty ? L10n.text("No MightySat found") : L10n.text("Select a device")
             self.detail = self.devices.isEmpty
-                ? "Gerät näher an den Mac legen, Finger hineinstecken und die Handy-App schließen. Dann erneut suchen."
-                : "Wähle deinen MightySat aus der Liste."
+                ? L10n.text("Move the device closer, insert a finger, and close the phone app. Then search again.")
+                : L10n.text("Select your MightySat from the list.")
             self.record("scan_finished", ["matches": String(self.devices.count)])
         }
     }
@@ -164,7 +164,7 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
         peripherals[peripheral.identifier] = peripheral
         if !devices.contains(where: { $0.id == peripheral.identifier }) {
             devices.append(FoundDevice(id: peripheral.identifier, name: name, rssi: RSSI.intValue))
-            detail = "MightySat gefunden. Wähle „Verbinden“."
+            detail = L10n.text("MightySat found. Choose “Connect”.")
             record("device_found", ["name": name, "id": peripheral.identifier.uuidString,
                 "rssi": RSSI.stringValue])
         }
@@ -179,8 +179,8 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
         liveFrameBaseline = 0; protocolFrameBaseline = 0
         receiveNotifying = false; transmitCharacteristic = nil; masimoDecoder = MasimoFrameDecoder()
         reading = nil; readingDate = nil
-        status = "Verbindung wird aufgebaut …"
-        detail = "Die Handy-App muss getrennt sein."
+        status = L10n.text("Connecting…")
+        detail = L10n.text("Disconnect the phone app first.")
         generation = UUID()
         let attempt = generation
         record("connecting", ["id": id.uuidString])
@@ -189,8 +189,8 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
         connectionTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: false) { [weak self] _ in
             guard let self = self, self.generation == attempt, self.busy else { return }
             self.disconnect()
-            self.status = "Verbindung hat zu lange gedauert"
-            self.detail = "Masimo-App schließen, Gerät am Finger lassen und erneut verbinden."
+            self.status = L10n.text("Connection timed out")
+            self.detail = L10n.text("Close the Masimo app, keep your finger in the device, and reconnect.")
             self.record("connection_timeout")
         }
     }
@@ -199,19 +199,19 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
         guard active?.identifier == peripheral.identifier else { return }
         connectionTimer?.invalidate(); busy = false
         connectedName = devices.first(where: { $0.id == peripheral.identifier })?.name ?? peripheral.name ?? "MightySat"
-        status = "Verbunden"
-        detail = "Datenschnittstellen werden geprüft …"
+        status = L10n.text("Connected")
+        detail = L10n.text("Checking data channels…")
         record("connected", ["id": peripheral.identifier.uuidString, "name": connectedName!])
         peripheral.discoverServices(nil)
         waitTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { [weak self] _ in
             guard let self = self, self.active?.state == .connected, self.reading == nil else { return }
             self.detail = self.protocolFrames > 0
-                ? "Gültige Masimo-Antworten empfangen. „Live-Werte starten“ wählen."
+                ? L10n.text("Valid Masimo responses received. Choose “Start live readings”.")
                 : self.canProbe
-                ? "Empfangskanal bereit. „Live-Werte starten“ wählen."
+                ? L10n.text("Receive channel ready. Choose “Start live readings”.")
                 : self.measurementPackets == 0
-                ? "Geräteinformationen gelesen. Noch keine Messdaten empfangen; ein Startbefehl könnte nötig sein."
-                : "Rohdaten vom Messkanal empfangen. Das Format ist noch nicht ausgewertet."
+                ? L10n.text("Device information received. No measurement packets yet; a start command may be needed.")
+                : L10n.text("Raw measurement data received. The format has not been decoded yet.")
             self.record("waiting_for_measurements", ["notifications": String(self.notifyCount)])
         }
     }
@@ -219,16 +219,16 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         guard active?.identifier == peripheral.identifier else { return }
         invalidateConnection()
-        status = "Verbindung fehlgeschlagen"
-        detail = error?.localizedDescription ?? "Gerät erneut suchen und verbinden."
+        status = L10n.text("Connection failed")
+        detail = error?.localizedDescription ?? L10n.text("Search for the device and connect again.")
         record("connection_failed", ["error": detail])
     }
 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         guard active?.identifier == peripheral.identifier else { return }
         invalidateConnection()
-        status = "Verbindung getrennt"
-        detail = error?.localizedDescription ?? "Gerät suchen, um erneut zu verbinden."
+        status = L10n.text("Disconnected")
+        detail = error?.localizedDescription ?? L10n.text("Search for the device to reconnect.")
         record("disconnected", ["error": error?.localizedDescription ?? ""])
     }
 
@@ -245,8 +245,8 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
         if let peripheral = active { central.cancelPeripheralConnection(peripheral) }
         central.stopScan()
         invalidateConnection()
-        status = "Verbindung getrennt"
-        detail = "Gerät suchen, um erneut zu verbinden."
+        status = L10n.text("Disconnected")
+        detail = L10n.text("Search for the device to reconnect.")
         record("disconnect_requested")
     }
 
@@ -257,18 +257,18 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
                 characteristic: tx.uuid.uuidString, notifying: receiveNotifying,
                 canSend: peripheral.canSendWriteWithoutResponse) != nil,
               let command = liveSession.begin() else {
-            detail = "Live-Start noch nicht bereit. Empfangskanal und Sendebereitschaft prüfen."
+            detail = L10n.text("Live start is not ready. Check the receive channel and send availability.")
             return
         }
         probeSent = true; canProbe = false
-        detail = "Status wird abgefragt, danach startet die Live-Übertragung …"
+        detail = L10n.text("Requesting status, then starting live readings…")
         peripheral.writeValue(Data(command), for: tx, type: .withoutResponse)
         record("masimo_query", ["uuid": tx.uuid.uuidString, "hex": "77 02 01 07", "source": "observed_iphone_dialog"])
         waitTimer?.invalidate()
         let attempt = generation
         waitTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: false) { [weak self] _ in
             guard let self = self, self.generation == attempt, self.liveFrames == 0 else { return }
-            self.detail = "Keine Live-Pakete empfangen. Gerät am Finger lassen; bei Bedarf trennen und erneut verbinden."
+            self.detail = L10n.text("No live packets received. Keep your finger in the device; disconnect and reconnect if needed.")
             self.record("masimo_live_timeout")
         }
     }
@@ -279,7 +279,7 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
               tx.service?.uuid.uuidString == MasimoProtocol.service, tx.uuid.uuidString == MasimoProtocol.transmit,
               let command = liveSession.nextCommand(canSend: peripheral.canSendWriteWithoutResponse) else { return }
         peripheral.writeValue(Data(command), for: tx, type: .withoutResponse)
-        detail = "Live-Übertragung aktiviert. Warte auf Messwerte …"
+        detail = L10n.text("Live streaming enabled. Waiting for readings…")
         record("masimo_live_start", ["hex": command.map { String(format: "%02X", $0) }.joined(separator: " "),
             "source": "observed_successful_iphone_dialog"])
     }
@@ -316,7 +316,7 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
             if characteristic.properties.contains(.read) { peripheral.readValue(for: characteristic) }
         }
         canProbe = !probeSent && receiveNotifying && transmitCharacteristic != nil
-        detail = "Warte auf Messdaten. Aufzeichnung läuft lokal."
+        detail = L10n.text("Waiting for readings. Recording locally.")
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
@@ -355,9 +355,9 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
             reading = parsed; readingDate = parsed == nil ? nil : Date()
         }
         if let parsed = parsed {
-            detail = parsed.continuous ? "Standard-Messwerte werden empfangen." : "Eine Einzelmessung wurde empfangen."
+            detail = parsed.continuous ? L10n.text("Receiving standard readings.") : L10n.text("Single measurement received.")
         } else if DeviceProtocol.isMeasurementChannel(service: service, characteristic: uuid), liveFrames == 0 {
-            detail = "Rohdaten vom Messkanal empfangen. Noch keine lesbaren Messwerte."
+            detail = L10n.text("Raw measurement data received. No readable values yet.")
         }
         record("packet", ["service": service, "uuid": uuid,
             "hex": bytes.map { String(format: "%02X", $0) }.joined(separator: " "),
@@ -369,15 +369,15 @@ final class BluetoothReader: NSObject, ObservableObject, CBCentralManagerDelegat
                 liveSession.receive(frame)
                 switch frame.opcode {
                 case 1:
-                    if liveFrames == 0 { detail = "Gültige Statusantwort empfangen." }
+                    if liveFrames == 0 { detail = L10n.text("Valid status response received.") }
                 case 5:
                     liveFrames += 1; waitTimer?.invalidate()
                     masimoReading = MasimoProtocol.decodeLive(frame)
                     reading = masimoReading.map { PLXReading(oxygen: $0.oxygen, pulse: $0.pulse, continuous: true) }
                     readingDate = reading == nil ? nil : Date()
                     detail = reading == nil
-                        ? "Live-Paket empfangen, Messung fehlt oder Status ist unbekannt. Finger und Geräteanzeige prüfen."
-                        : "Live-Messwerte direkt vom MightySat empfangen."
+                        ? L10n.text("Live packet received, but readings are missing or the status is unknown. Check finger placement and the device display.")
+                        : L10n.text("Receiving live readings directly from MightySat.")
                 default: break
                 }
                 record("masimo_frame", ["opcode": String(frame.opcode), "crc_valid": "true",
@@ -402,14 +402,14 @@ struct ReaderView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Masimo Live").font(.largeTitle.bold())
-                    Text("MightySat-Messwerte am Mac").foregroundStyle(.secondary)
+                    Text(L10n.text("MightySat readings on your Mac")).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Image(systemName: "waveform.path.ecg").font(.largeTitle).accessibilityHidden(true)
             }
-            Picker("Datenquelle", selection: $source) {
-                Text("iPhone per USB").tag("usb")
-                Text("MightySat per Bluetooth").tag("bluetooth")
+            Picker(L10n.text("Data source"), selection: $source) {
+                Text(L10n.text("iPhone via USB")).tag("usb")
+                Text(L10n.text("MightySat via Bluetooth")).tag("bluetooth")
             }.pickerStyle(.segmented)
             if source == "usb" {
                 USBReaderView()
@@ -428,19 +428,19 @@ struct ReaderView: View {
                     Text(reader.deviceInfo["2A24"] ?? "MightySat").font(.headline)
                     Text(reader.deviceInfo["2A29"] ?? "Masimo").foregroundStyle(.secondary)
                     Spacer()
-                    if let serial = reader.deviceInfo["2A25"] { Text("Seriennummer: \(serial)").textSelection(.enabled) }
+                    if let serial = reader.deviceInfo["2A25"] { Text(L10n.format("Serial number: %@", serial)).textSelection(.enabled) }
                 }
             }
 
             HStack(spacing: 16) {
-                Button("Gerät suchen", action: reader.scan).buttonStyle(.borderedProminent).controlSize(.large)
+                Button(L10n.text("Search for device"), action: reader.scan).buttonStyle(.borderedProminent).controlSize(.large)
                 if reader.connectedName != nil || reader.busy {
-                    Button("Trennen", action: reader.disconnect).controlSize(.large)
+                    Button(L10n.text("Disconnect"), action: reader.disconnect).controlSize(.large)
                 }
                 if reader.connectedName != nil {
-                    Button("Live-Werte starten", action: reader.startLive).disabled(!reader.canProbe).controlSize(.large)
+                    Button(L10n.text("Start live readings"), action: reader.startLive).disabled(!reader.canProbe).controlSize(.large)
                 }
-                Button("Aufzeichnungen öffnen") {
+                Button(L10n.text("Open recordings")) {
                     do {
                         try FileManager.default.createDirectory(at: reader.captureDirectory, withIntermediateDirectories: true)
                         NSWorkspace.shared.open(reader.captureDirectory)
@@ -454,7 +454,7 @@ struct ReaderView: View {
                         Text(device.name).font(.headline)
                         Spacer()
                         Text("\(device.rssi) dBm").foregroundStyle(.secondary)
-                        Button("Verbinden") { reader.connect(device.id) }.controlSize(.large)
+                        Button(L10n.text("Connect")) { reader.connect(device.id) }.controlSize(.large)
                     }.padding(16).background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
                 }
             }
@@ -462,8 +462,8 @@ struct ReaderView: View {
             let fresh = reader.readingDate.map { now.timeIntervalSince($0) < 5 } ?? false
             let value = fresh ? reader.reading : nil
             HStack(spacing: 16) {
-                metric("Sauerstoffsättigung", value: value.map { String(format: "%.1f", $0.oxygen) } ?? "—", unit: "%")
-                metric("Puls", value: value.map { String(format: "%.0f", $0.pulse) } ?? "—", unit: "bpm")
+                metric(L10n.text("Oxygen saturation"), value: value.map { String(format: "%.1f", $0.oxygen) } ?? "—", unit: "%")
+                metric(L10n.text("Pulse rate"), value: value.map { String(format: "%.0f", $0.pulse) } ?? "—", unit: "bpm")
             }
             let extra = fresh ? reader.masimoReading : nil
             HStack(spacing: 16) {
@@ -471,19 +471,19 @@ struct ReaderView: View {
                 metric("PVI", value: extra?.pvi.map { String(format: "%.0f", $0) } ?? "—", unit: "%")
                 metric("PI", value: extra?.pi.map { String(format: "%.1f", $0) } ?? "—", unit: "%")
             }
-            Text(value.map { $0.continuous ? "Fortlaufende Messung · zuletzt \(reader.readingDate!.formatted(date: .omitted, time: .standard))" : "Einzelmessung · empfangen \(reader.readingDate!.formatted(date: .omitted, time: .standard))" }
-                ?? "Noch keine aktuellen, lesbaren Messwerte.")
+            Text(value.map { $0.continuous ? L10n.format("Continuous measurement · last received %@", reader.readingDate!.formatted(date: .omitted, time: .standard)) : L10n.format("Single measurement · received %@", reader.readingDate!.formatted(date: .omitted, time: .standard)) }
+                ?? L10n.text("No current, readable measurements yet."))
                 .foregroundStyle(.secondary)
 
-            Text("Experimentelle direkte Auslesung · unbekannte Statusflags werden ausgeblendet.")
+            Text(L10n.text("Experimental direct readings · unknown status flags are hidden."))
                 .font(.footnote).foregroundStyle(.secondary)
 
-            DisclosureGroup("Verbindungsdetails · \(reader.visibleLiveFrames) Live-Pakete · \(reader.visibleProtocolFrames) gültige Masimo-Rahmen", isExpanded: $diagnostics) {
+            DisclosureGroup(L10n.format("Connection details · Live packets: %ld · Valid Masimo frames: %ld", reader.visibleLiveFrames, reader.visibleProtocolFrames), isExpanded: $diagnostics) {
                 HStack {
-                    Button("Anzeige leeren", action: reader.clearDiagnostics)
-                        .help("Sichtbare Zähler und Verbindungsdetails zurücksetzen. Die Messung läuft weiter.")
+                    Button(L10n.text("Clear display"), action: reader.clearDiagnostics)
+                        .help(L10n.text("Reset visible counters and connection details. Readings continue."))
                     Spacer()
-                    Text("Aufzeichnungsdateien bleiben erhalten.")
+                    Text(L10n.text("Recording files are kept."))
                         .font(.caption).foregroundStyle(.secondary)
                 }.padding(.top, 8)
                 ScrollView {
@@ -494,7 +494,7 @@ struct ReaderView: View {
             }
             }
             Spacer(minLength: 0)
-            Text("Alle Aufzeichnungen bleiben lokal auf diesem Mac.").font(.footnote).foregroundStyle(.secondary)
+            Text(L10n.text("All recordings stay on this Mac.")).font(.footnote).foregroundStyle(.secondary)
         }
         .padding(32).frame(minWidth: 720, minHeight: 760)
         .onReceive(clock) { now = $0 }

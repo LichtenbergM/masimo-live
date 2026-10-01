@@ -1,0 +1,4 @@
+/* Localized macOS permission prompts. */
+"NSBluetoothAlwaysUsageDescription" = "Masimo Live connects to your MightySat to read its measurements locally on your Mac.";
+"NSBluetoothPeripheralUsageDescription" = "Masimo Live connects to your MightySat to read its measurements locally on your Mac.";
+"NSCameraUsageDescription" = "Masimo Live reads the USB-connected iPhone screen to recognize the displayed Masimo values locally.";

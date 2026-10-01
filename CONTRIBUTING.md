@@ -19,7 +19,8 @@ folders, iPhone screenshots, or PacketLogger traces.
 
 1. Fork the repository and work on a branch.
 2. Keep changes focused and preserve the existing connection and freshness rules.
-3. Run `bash test.sh` and `bash build.sh` on a Mac before opening a pull request.
+3. Run `bash test.sh`, `bash build.sh`, and `bash Tests/check-localization.sh`
+   on a Mac before opening a pull request.
 4. Explain the behavior changed, how it was checked, and any device or firmware
    limitations. Separate automated tests from actual hardware observations.
 
@@ -42,5 +43,13 @@ Contribute only material you have the right to share. Do not submit extracted
 vendor code, proprietary SDKs, firmware, third-party app bundles, personal
 recordings, or third-party branding assets. Changes should serve interoperability
 with devices the user owns or is authorized to access.
+
+## Translations
+
+User-facing text lives in `Resources/en.lproj` and `Resources/de.lproj`.
+Keep both language tables in sync, preserve format placeholders such as `%@`
+and `%ld`, and translate the macOS permission prompts in `InfoPlist.strings`.
+The test suite checks message coverage, formatting, and native bundle lookups.
+Changing the Mac interface language does not change the iPhone OCR layout.
 
 Contributions are made under the project's MIT License.

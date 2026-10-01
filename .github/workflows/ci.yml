@@ -16,6 +16,8 @@ jobs:
         run: bash test.sh
       - name: Build the macOS app
         run: bash build.sh
+      - name: Verify packaged English, German, and fallback localization
+        run: bash Tests/check-localization.sh
       - name: Verify local signature
         run: codesign --verify --deep --strict 'Masimo Live.app'
       - name: Verify deployment target

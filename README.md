@@ -29,7 +29,7 @@ The Mac app uses Apple frameworks only. There are no third-party packages, cloud
 | Direct Bluetooth | Tested with one MightySat Rx running firmware **1.0.6.3** |
 | Other MightySat models or firmware | Unverified; not a general compatibility guarantee |
 | iPhone USB mode | Tested with the observed Masimo app Home screen layout; other layouts are unverified |
-| App language | German; button translations are provided below |
+| App languages | English and German; selected using macOS language preferences |
 
 Direct streaming is deliberately limited to the observed firmware signature. If a different device connects but does not start streaming, it may be outside the currently supported protocol. Do not bypass that check without validating the protocol first.
 
@@ -62,10 +62,10 @@ Keep the app in a writable directory. Recordings and exports are created in a `c
 
 1. Close the Masimo app on your phone so it releases the Bluetooth connection.
 2. Enable Bluetooth on your MightySat and insert a finger as instructed by the device manufacturer.
-3. Open Masimo Live and select **MightySat per Bluetooth**.
-4. Allow Bluetooth access if macOS asks. Click **Gerät suchen** (Search for device).
-5. Click **Verbinden** (Connect) beside your device.
-6. Once the receive channel is ready, click **Live-Werte starten** (Start live readings).
+3. Open Masimo Live and select **MightySat via Bluetooth**.
+4. Allow Bluetooth access if macOS asks. Click **Search for device**.
+5. Click **Connect** beside your device.
+6. Once the receive channel is ready, click **Start live readings**.
 
 The app first requests device status. After a matching, checksum-valid status response, it sends the observed streaming activation once per connection. It does not automatically reconnect; after reconnecting, click Start live readings again.
 
@@ -80,12 +80,20 @@ This is a separate way to view readings that are already visible in the iPhone a
 1. Connect the MightySat to the Masimo app on your iPhone.
 2. Connect the iPhone to the Mac with a data-capable USB cable, unlock it, and trust the Mac if prompted.
 3. Leave the Masimo app's **Home** screen visible with live readings.
-4. In Masimo Live, select **iPhone per USB**, choose the iPhone, and click **iPhone auslesen** (Read iPhone).
+4. In Masimo Live, select **iPhone via USB**, choose the iPhone, and click **Read iPhone**.
 5. Allow camera access if requested by macOS for the AVFoundation capture path.
 
 The app uses CoreMediaIO / AVFoundation for the USB screen feed and Vision for on-device text recognition. SpO₂ and pulse must be unambiguous; optional values can appear separately. It does not save screenshots or record audio, and it filters screen sources rather than selecting ordinary webcams.
 
 USB mode depends on the visible app layout and a working iPhone-to-MightySat connection. Its timestamps describe screen analysis, not sensor measurement time. The Bluetooth reader disconnects when you select USB mode.
+
+## Interface language
+
+Version 0.4.3 supports English and German throughout the interface, connection messages, errors, and permission prompts. The app follows your macOS language preference, with English as the fallback for unsupported languages.
+
+To choose a language just for Masimo Live, open **System Settings → General → Language & Region → Applications**, add or select Masimo Live, and choose English or German. Quit and reopen the app after changing the language. See [Apple's app language instructions](https://support.apple.com/en-gb/guide/mac-help/-mh26684/mac).
+
+This translates the Mac interface. USB text recognition still expects the previously supported iPhone Home screen layout.
 
 ## Use the readings in another project
 
@@ -152,7 +160,7 @@ The client defaults to `captures/live.json` relative to its own checkout. If you
 
 Recordings can contain health data, serial numbers, Bluetooth identifiers, device names, timestamps, and local file paths. The app stores these on your Mac; it does not upload them. New recording directories use permissions `0700` and recording files use `0600`.
 
-`captures/`, app bundles, build output, packet captures, and private development notes are excluded from Git. **Do not attach raw recordings to a public issue.** Share a minimal, redacted example instead. **Anzeige leeren** (Clear display) resets visible diagnostics; it does not delete recordings. To delete recordings, stop the app and remove the relevant local files yourself.
+`captures/`, app bundles, build output, packet captures, and private development notes are excluded from Git. **Do not attach raw recordings to a public issue.** Share a minimal, redacted example instead. **Clear display** resets visible diagnostics; it does not delete recordings. To delete recordings, stop the app and remove the relevant local files yourself.
 
 ## Troubleshooting
 
@@ -175,9 +183,10 @@ The USB compatibility fallback currently emits an AVFoundation deprecation warni
 ```sh
 bash test.sh
 bash build.sh
+bash Tests/check-localization.sh
 ```
 
-Tests cover standard and proprietary packet parsing, fragment reassembly, checksums, conservative status handling, streaming session sequencing, OCR parsing, and export expiry. They run without a connected sensor. Python 3 is required for the client tests. GitHub Actions also runs the tests, builds the app, and checks its deployment target and signature.
+Tests cover standard and proprietary packet parsing, fragment reassembly, checksums, conservative status handling, streaming session sequencing, OCR parsing, export expiry, and English/German translations. They run without a connected sensor. Python 3 is required for the client tests. GitHub Actions also builds the app and checks its packaged languages, fallback language, deployment target, and signature.
 
 | File | Responsibility |
 | --- | --- |
@@ -187,6 +196,7 @@ Tests cover standard and proprietary packet parsing, fragment reassembly, checks
 | `Sources/ScreenReading.swift` | Mapping recognized screen text to readings |
 | `Sources/Capture.swift` | Local session recordings |
 | `Sources/LiveExport.swift` | Bluetooth JSON snapshot and freshness rules |
+| `Sources/Localization.swift`, `Resources/` | Native English/German text and permission prompts |
 | `tools/live_client.py` | Optional Python snapshot consumer |
 
 See [protocol notes](docs/PROTOCOL.md) for the implemented wire format, and [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a change or compatibility report.
@@ -194,5 +204,9 @@ See [protocol notes](docs/PROTOCOL.md) for the implemented wire format, and [CON
 ## License and attribution
 
 Copyright © 2026 Maurice Lichtenberg. The project's source code is available under the [MIT License](LICENSE).
+
+If you use Masimo Live in your project, please mention it in your README, credits, or About page. For example: **“Uses [Masimo Live](https://github.com/LichtenbergM/masimo-live) by Maurice Lichtenberg.”** I'd also love to hear what you build with it.
+
+Public credit is appreciated, but optional under MIT. When redistributing the code or substantial portions of it, you must retain the copyright notice and MIT license text as required by [LICENSE](LICENSE).
 
 The license covers this project's code. It does not grant rights to third-party trademarks, software, firmware, or patents. Masimo, MightySat, and other product names remain the property of their respective owners; their use here identifies compatibility. See [NOTICE](NOTICE).

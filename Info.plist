@@ -6,11 +6,13 @@
   <key>CFBundleName</key><string>Masimo Live</string>
   <key>CFBundleDisplayName</key><string>Masimo Live</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleVersion</key><string>6</string>
-  <key>CFBundleShortVersionString</key><string>0.4.2</string>
+  <key>CFBundleVersion</key><string>7</string>
+  <key>CFBundleShortVersionString</key><string>0.4.3</string>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>de</string></array>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
-  <key>NSBluetoothAlwaysUsageDescription</key><string>Masimo Live verbindet deinen MightySat, um seine Messdaten lokal am Mac auszulesen.</string>
-  <key>NSBluetoothPeripheralUsageDescription</key><string>Masimo Live verbindet deinen MightySat, um seine Messdaten lokal am Mac auszulesen.</string>
+  <key>NSBluetoothAlwaysUsageDescription</key><string>Masimo Live connects to your MightySat to read its measurements locally on your Mac.</string>
+  <key>NSBluetoothPeripheralUsageDescription</key><string>Masimo Live connects to your MightySat to read its measurements locally on your Mac.</string>
   <key>NSHighResolutionCapable</key><true/>
-  <key>NSCameraUsageDescription</key><string>Masimo Live liest den per USB verbundenen iPhone-Bildschirm, um die dort angezeigten Masimo-Werte lokal zu erkennen.</string>
+  <key>NSCameraUsageDescription</key><string>Masimo Live reads the USB-connected iPhone screen to recognize the displayed Masimo values locally.</string>
 </dict></plist>

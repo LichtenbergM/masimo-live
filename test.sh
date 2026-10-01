@@ -8,4 +8,6 @@ xcrun swiftc -module-cache-path .build/module-cache -swift-version 5 -parse-as-l
 .build/screen-tests
 xcrun swiftc -module-cache-path .build/module-cache -swift-version 5 -parse-as-library Sources/Protocol.swift Sources/LiveExport.swift Tests/LiveExportTests.swift -o .build/live-export-tests
 .build/live-export-tests
+xcrun swiftc -module-cache-path .build/module-cache -swift-version 5 -parse-as-library Sources/Localization.swift Tests/LocalizationTests.swift -o .build/localization-tests
+.build/localization-tests
 PYTHONDONTWRITEBYTECODE=1 python3 Tests/LiveClientTests.py
