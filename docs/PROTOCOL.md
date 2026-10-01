@@ -66,6 +66,19 @@ status or pulse flags reject the whole reading. Invalid optional values become
 absent independently. In particular, RRp flags `01` and `04` are unexplained and
 remain hidden.
 
+### Annotated synthetic example
+
+![Synthetic live packet with framing, status fields, measurement offsets, and CRC.](assets/live-packet-layout.svg)
+
+```text
+77 11 05 00 00 00 00 00 62 00 48 10 14 00 26 02 00 10 0E
+```
+
+The invented values are SpO₂ 98%, pulse 72 bpm, RRp 16/min, PVI 20%, and PI 5.50%.
+The final `0E` is CRC-8 of the opcode and payload at indexes 2–17. In particular,
+`26 02` is little endian: `0x0226 = 550`, divided by 100 for PI. This is an
+independently encoded example, not a personal measurement capture.
+
 Status, acknowledgement, signal, and archived-record frames do not refresh live
 measurements or their age. Displayed readings expire after five seconds without
 a valid update and clear on disconnection. The export requires a connected,

@@ -21,6 +21,16 @@ I built this because I wanted to connect my own MightySat Rx directly to my Mac 
 
 The Mac app uses Apple frameworks only. There are no third-party packages, cloud services, accounts, analytics, or network servers. Python 3 is only needed for the optional JSON client and its tests.
 
+![Diagram of the direct Bluetooth path from MightySat to Mac to local JSON consumers, and the separate iPhone USB screen-reading path.](docs/assets/connection-paths.svg)
+
+## Example plots
+
+These plots illustrate how another project could consume the local export. **All plotted values and timing are invented.** They are not personal recordings, performance measurements, or evidence of medical accuracy. The current Mac app displays numeric readings; these charts are documentation examples.
+
+![Five synthetic traces for SpO₂, pulse, RRp, PVI, and PI. A reception pause begins at 12 seconds; values expire at 16 seconds and resume with new packets at 20 seconds.](docs/assets/synthetic-readings.svg)
+
+In this example, packets arrive once per second until 11 seconds, then resume at 20 seconds. The last reading remains fresh for less than five seconds. At 16 seconds, it expires and becomes `null`. The gaps are produced using the actual `read_live()` client, without reading any sensor recordings. This example cadence is not a claim about a device's sampling rate.
+
 ## Compatibility
 
 | Component | Current status |
@@ -73,6 +83,58 @@ Search results are restricted to advertised names containing `MightySat` or `Mas
 
 Unknown general status combinations suppress the reading. Unsupported supplementary fields are hidden individually. Removing and reinserting a finger was checked on the tested device: invalid readings disappeared and readings resumed when valid packets returned.
 
+### Bluetooth startup, step by step
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Mac as Masimo Live on Mac
+    participant Sensor as MightySat Rx
+    User->>Mac: Connect
+    Mac->>Sensor: Discover GATT service and channels
+    Mac->>Sensor: Subscribe to RX notifications
+    Sensor-->>Mac: RX subscription ready
+    User->>Mac: Start live readings
+    Mac->>Sensor: Status query — 77 02 01 07
+    Sensor-->>Mac: Status response — opcode 01
+    Note over Mac: Validate CRC, 22-byte length, and signature 63 10
+    alt Matching status and TX ready
+        Mac->>Sensor: Activate once — 77 05 03 1F 00 03 D6
+        Sensor-->>Mac: Live frames — opcode 05
+        Note over Mac: Reassemble, verify CRC, and validate status flags
+        Mac->>Mac: Display readings and update local JSON
+    else Unsupported, corrupt, or missing status
+        Note over Mac: No activation command is sent
+    end
+```
+
+If CoreBluetooth pauses writes after a matching status response, activation waits for send availability. The same activation is not sent twice within a connection. Other firmware and the activation parameters remain unverified.
+
+### Hex reference: a synthetic live packet
+
+![Annotated nineteen-byte synthetic live frame showing the header, byte offsets, status fields, five decoded values, and CRC.](docs/assets/live-packet-layout.svg)
+
+```text
+77 11 05 00 00 00 00 00 62 00 48 10 14 00 26 02 00 10 0E
+```
+
+This checksum-valid example encodes invented values: **SpO₂ 98%, pulse 72 bpm, RRp 16/min, PVI 20%, PI 5.50%**. Offsets count from zero at the `77` prefix.
+
+| Bytes / offset | Meaning in this example |
+| --- | --- |
+| `77` / 0 | Frame prefix |
+| `11` / 1 | Length: hexadecimal `11` = 17; total size is 17 + 2 = 19 bytes |
+| `05` / 2 | Live measurement opcode |
+| `62` / 8 | Hexadecimal `62` = decimal 98: SpO₂ |
+| `48` / 10 | Hexadecimal `48` = decimal 72: pulse |
+| `10` / 11 | Accepted pulse status flag; not a measurement value |
+| `14 00` / 12–13 | Little-endian `0x0014` = 20: PVI |
+| `26 02` / 14–15 | Little-endian `0x0226` = 550; divide by 100 for PI 5.50% |
+| `10` / 17 | Hexadecimal `10` = decimal 16: RRp |
+| `0E` / 18 | CRC-8 over indexes 2–17; polynomial `07`, initial value `00` |
+
+The remaining gray bytes are validated status/flag fields, not padding to ignore. Unknown general or pulse status suppresses the reading; unsupported supplementary values disappear individually. See the [full offset and validation notes](docs/PROTOCOL.md).
+
 ## Optional: read the iPhone screen over USB
 
 This is a separate way to view readings that are already visible in the iPhone app.
@@ -120,6 +182,10 @@ The snapshot is updated on live frames and once per second. Unavailable values a
 ```
 
 **Always check expiry yourself.** The last file remains on disk after the app quits. `connected` and `fresh` describe the snapshot when it was written; consumers must also check their current time against `valid_until`. `received_at` is the time a packet arrived at the Mac, not a validated sensor timestamp.
+
+![Freshness plot: without another packet, age increases until readings expire at exactly five seconds, even if the JSON file remains on disk.](docs/assets/freshness-window.svg)
+
+The green interval is fresh only while all other validity conditions hold. At the five-second boundary, the client returns `fresh: false` and clears every measurement to `null`. The file's presence or modification time is not enough to establish freshness.
 
 The optional standard-library Python client performs those freshness checks and replaces expired measurements with `null`:
 
@@ -200,6 +266,8 @@ Tests cover standard and proprietary packet parsing, fragment reassembly, checks
 | `tools/live_client.py` | Optional Python snapshot consumer |
 
 See [protocol notes](docs/PROTOCOL.md) for the implemented wire format, and [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a change or compatibility report.
+
+The figures are available as SVG and PNG. See [visual sources and regeneration](docs/VISUALS.md) to reproduce them; plotting dependencies are separate from the app's build and runtime.
 
 ## License and attribution
 
