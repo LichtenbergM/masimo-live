@@ -1,0 +1,38 @@
+name: macOS checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Run parser and export tests
+        run: bash test.sh
+      - name: Build the macOS app
+        run: bash build.sh
+      - name: Verify local signature
+        run: codesign --verify --deep --strict 'Masimo Live.app'
+      - name: Verify deployment target
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import plistlib
+          import re
+          import subprocess
+          from pathlib import Path
+
+          minimum = plistlib.loads(Path('Info.plist').read_bytes())['LSMinimumSystemVersion']
+          output = subprocess.check_output(
+              ['xcrun', 'vtool', '-show-build', 'Masimo Live.app/Contents/MacOS/MasimoLive'],
+              text=True,
+          )
+          actual = re.search(r'minos\s+(\S+)', output).group(1)
+          assert actual == minimum, f'Built for macOS {actual}, expected {minimum}'
+          print(f'Deployment target verified: macOS {actual}')
+          PY

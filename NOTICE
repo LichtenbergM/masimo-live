@@ -1,0 +1,24 @@
+Independent project and third-party names
+
+Masimo Live is an independent software project by Maurice Lichtenberg.
+It is not affiliated with, endorsed by, sponsored by, or supported by
+Masimo Corporation, Apple Inc., or their affiliates.
+
+Masimo and MightySat are trademarks or product names of Masimo Corporation.
+Apple, macOS, iPhone, and Xcode are trademarks or product names of Apple Inc.
+Other names belong to their respective owners. Names are used solely to
+identify devices, platforms, or software relevant to interoperability.
+No third-party logos are included.
+
+This repository contains the project's application source code, tests,
+and documentation. It does not distribute Masimo application binaries,
+firmware, manuals, proprietary SDKs, Apple PacketLogger, diagnostic profiles,
+or personal recording files.
+
+The MIT License applies to this project's code. It grants no rights to
+third-party trademarks, software, firmware, or patents, and makes no
+representation that a particular use is authorized by a third party.
+
+The software is experimental and has not been clinically validated or
+certified for medical use. It is not intended for diagnosis, treatment
+decisions, alarms, or safety-critical monitoring.

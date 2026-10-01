@@ -1,0 +1,15 @@
+.build/
+*.app/
+captures/
+local/
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+*.pklg
+*.pcap
+*.pcapng
+*.pem
+*.p12
