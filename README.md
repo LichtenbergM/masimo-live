@@ -2,7 +2,7 @@
 
 **An independent macOS app for reading a Masimo MightySat over Bluetooth — locally, on your own Mac.**
 
-Built by [Maurice Lichtenberg](https://github.com/LichtenbergM).
+Built by [Maurice Lichtenberg](https://www.linkedin.com/in/berg/).
 
 I built this because I wanted to connect my own MightySat Rx directly to my Mac and use its readings in local projects. Masimo Live brings those readings into a native SwiftUI app and makes them available as a simple JSON file for other tools.
 
@@ -273,7 +273,7 @@ The figures are available as SVG and PNG. See [visual sources and regeneration](
 
 Copyright © 2026 Maurice Lichtenberg. The project's source code is available under the [MIT License](LICENSE).
 
-If you use Masimo Live in your project, please mention it in your README, credits, or About page. For example: **“Uses [Masimo Live](https://github.com/LichtenbergM/masimo-live) by Maurice Lichtenberg.”** I'd also love to hear what you build with it.
+If you use Masimo Live in your project, please mention it in your README, credits, or About page. For example: **“Uses [Masimo Live](https://github.com/LichtenbergM/masimo-live) by [Maurice Lichtenberg](https://www.linkedin.com/in/berg/).”** I'd also love to hear what you build with it.
 
 Public credit is appreciated, but optional under MIT. When redistributing the code or substantial portions of it, you must retain the copyright notice and MIT license text as required by [LICENSE](LICENSE).
 
